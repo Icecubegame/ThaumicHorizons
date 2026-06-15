@@ -91,38 +91,15 @@ public class PocketPlaneData {
                 data.radius = 127;
             }
 
-            final IChunkProvider chunkProvider = world.getChunkProvider();
             final int centerChunkX = xCenter / 16;
             final int centerChunkZ = zCenter / 16;
-            int width = (int) (Math.ceil((float) data.radius / 16.0f)) + 1;
-            int height = 0;
-            int radiusError = 1 - width;
-            while (width >= height) {
-                int xmin = centerChunkX - width;
-                int xmax = centerChunkX + width;
-                for (int x = xmin; x <= xmax; x++) {
-                    chunkProvider.loadChunk(x, centerChunkZ - height);
-                    chunkProvider.loadChunk(x, centerChunkZ + height);
-                }
-                ++height;
-                if (radiusError < 0) {
-                    radiusError += 2 * height + 1;
-                } else {
-                    int xminTranspose = centerChunkX - height;
-                    int xmaxTranspose = centerChunkX + height;
-                    for (int x = xminTranspose; x <= xmaxTranspose; x++) {
-                        chunkProvider.loadChunk(x, centerChunkZ - width);
-                        chunkProvider.loadChunk(x, centerChunkZ + width);
-                    }
-                    --width;
-                    radiusError += 2 * (height - width + 1);
-                }
-            }
+            final int chunkRadius = (int) (Math.ceil((float) data.radius / 16.0f));
 
             data.color = getColor(aspects);
             final BiomeGenBase bio = setBiome(xCenter, yCenter, zCenter, data, world, aspects);
             final int noise = fastFloor(calcNoise(aspects));
             final int life = fastFloor(calcLife(aspects));
+            preloadChunks(centerChunkX, centerChunkZ, chunkRadius + 1, world.getChunkProvider());
             drawLayers(xCenter, yCenter, zCenter, data, world, aspects, noise, bio, life);
             drawCaves(xCenter, yCenter, zCenter, data, world, aspects, noise);
             drawPockets(xCenter, yCenter, zCenter, data, world, aspects, noise);
@@ -161,6 +138,33 @@ public class PocketPlaneData {
             world.getChunkFromBlockCoords(xCenter, zCenter).isModified = true;
             creatures = 0;
             ++pocketPlaneMAXID;
+        }
+    }
+
+    private static void preloadChunks(int xCenter, int zCenter, int radius, IChunkProvider chunkProvider) {
+        int width = radius;
+        int height = 0;
+        int radiusError = 1 - width;
+        while (width >= height) {
+            int xmin = xCenter - width;
+            int xmax = xCenter + width;
+            for (int x = xmin; x <= xmax; x++) {
+                chunkProvider.loadChunk(x, zCenter - height);
+                chunkProvider.loadChunk(x, zCenter + height);
+            }
+            ++height;
+            if (radiusError < 0) {
+                radiusError += 2 * height + 1;
+            } else {
+                int xminTranspose = xCenter - height;
+                int xmaxTranspose = xCenter + height;
+                for (int x = xminTranspose; x <= xmaxTranspose; x++) {
+                    chunkProvider.loadChunk(x, zCenter - width);
+                    chunkProvider.loadChunk(x, zCenter + width);
+                }
+                --width;
+                radiusError += 2 * (height - width + 1);
+            }
         }
     }
 

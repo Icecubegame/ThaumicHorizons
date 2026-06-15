@@ -89,6 +89,16 @@ public class PocketPlaneData {
             } else {
                 data.radius = 127;
             }
+
+            final int maxChunkRadius = 128 / 16;
+            final int centerChunkX = xCenter / 16;
+            final int centerChunkZ = zCenter / 16;
+            for (int deltaChunkX = -maxChunkRadius; deltaChunkX <= maxChunkRadius; deltaChunkX++) {
+                for (int deltaChunkZ = -maxChunkRadius; deltaChunkZ <= maxChunkRadius; deltaChunkZ++) {
+                    world.getChunkProvider().loadChunk(xCenter + deltaChunkX, centerChunkZ + deltaChunkZ);
+                }
+            }
+
             data.color = getColor(aspects);
             final BiomeGenBase bio = setBiome(xCenter, yCenter, zCenter, data, world, aspects);
             final int noise = fastFloor(calcNoise(aspects));

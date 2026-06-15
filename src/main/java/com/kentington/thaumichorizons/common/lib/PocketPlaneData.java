@@ -36,6 +36,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.NoiseGeneratorOctaves;
 
 import com.kentington.thaumichorizons.common.ThaumicHorizons;
@@ -90,12 +91,31 @@ public class PocketPlaneData {
                 data.radius = 127;
             }
 
-            final int maxChunkRadius = 128 / 16;
+            final IChunkProvider chunkProvider = world.getChunkProvider();
             final int centerChunkX = xCenter / 16;
             final int centerChunkZ = zCenter / 16;
-            for (int deltaChunkX = -maxChunkRadius; deltaChunkX <= maxChunkRadius; deltaChunkX++) {
-                for (int deltaChunkZ = -maxChunkRadius; deltaChunkZ <= maxChunkRadius; deltaChunkZ++) {
-                    world.getChunkProvider().loadChunk(xCenter + deltaChunkX, centerChunkZ + deltaChunkZ);
+            int width = (int) (Math.ceil((float) data.radius / 16.0f)) + 1;
+            int height = 0;
+            int radiusError = 1 - width;
+            while (width >= height) {
+                int xmin = centerChunkX - width;
+                int xmax = centerChunkX + width;
+                for (int x = xmin; x <= xmax; x++) {
+                    chunkProvider.loadChunk(x, centerChunkZ - height);
+                    chunkProvider.loadChunk(x, centerChunkZ + height);
+                }
+                ++height;
+                if (radiusError < 0) {
+                    radiusError += 2 * height + 1;
+                } else {
+                    int xminTranspose = centerChunkX - height;
+                    int xmaxTranspose = centerChunkX + height;
+                    for (int x = xminTranspose; x <= xmaxTranspose; x++) {
+                        chunkProvider.loadChunk(x, centerChunkZ - width);
+                        chunkProvider.loadChunk(x, centerChunkZ + width);
+                    }
+                    --width;
+                    radiusError += 2 * (height - width + 1);
                 }
             }
 
